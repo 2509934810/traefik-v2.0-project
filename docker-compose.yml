@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  edge:
+    image: traefik:v2.0.0-beta1
+    command:
+      - --providers.docker
+      - --entrypoints.web.address=:80
+      - --api
+    ports:
+      - "80:80"
+      - "8080:8080"
+    labels:
+      - "traefik.enable=false"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  gitea:
+    image: gitea/gitea:1.9
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea-web.rule=Host(`traefik-test.com`)"
+      - "traefik.http.routers.gitea-web.entrypoints=web"
+      - "traefik.http.routers.gitea-web.service=gitea-web-svc"
+      - "traefik.http.services.gitea-web-svc.loadbalancer.server.port=3000"
+      - "traefik.tcp.routers.gitea-ssh.rule=HostSNI(`traefik-ssh.com`)"
+      - "traefik.tcp.routers.gitea-ssh.entrypoints=web"
+      - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port=22"
+  nginx:
+    image: nginx
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx-server.rule=Host(`nginx-server.com`)"
+      - "traefik.http.routers.nginx-server.entrypoints=web"
+      - "traefik.http.routers.nginx-server.service=lei-nginx-services"
+      - "traefik.http.services.lei-nginx-services.loadbalancer.server.port=80"
