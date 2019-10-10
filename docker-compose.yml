@@ -31,6 +31,17 @@ services:
       - "traefik.tcp.routers.gitea-ssh.entrypoints=web"
       - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
       - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port=22"
+
+  redis:
+    iamge: redis
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.redis-server.rule"=HostSNI('redis-server.com')
+      - "traefik.tcp.routers.redis-server.entrypoints=web"
+      - "traefik.tcp.routers.redis-server.service=lei-redis-server"
+      - "traefik.tcp.services.lei-redis-server.loadbalancer.server.port=6379"
+      
   nginx:
     image: nginx
     restart: unless-stopped
